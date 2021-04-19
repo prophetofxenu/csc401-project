@@ -17,6 +17,9 @@ public:
     /* Tell if currently connected to client */
     virtual bool is_connected() = 0;
 
+    /* Close socket */
+    virtual void close() = 0;
+
 };
 
 
