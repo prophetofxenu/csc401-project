@@ -16,7 +16,6 @@ list<RFCHolder> CentralIndex::rfcs;
 mutex CentralIndex::rfcs_mut;
 
 
-
 bool CentralIndex::add_client(string hostname, int upload_port) {
     
     clients_mut.lock();
