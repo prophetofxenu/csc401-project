@@ -86,7 +86,6 @@ void GetRFCMessage::from_bytes(std::byte *bytes) {
 
 std::byte* GetRFCMessage::to_bytes() {
     // allocate a new buffer to store the message in
-    // in this case, it's just a short
     std::byte *buf = new std::byte[message_size()];
     // use pos to keep track of where we need to write next in the buffer
     unsigned int pos = 0;

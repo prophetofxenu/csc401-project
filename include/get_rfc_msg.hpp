@@ -22,7 +22,7 @@ public:
     std::string get_host();
     void set_host(std::string host);
     std::string get_os();
-    void set_os(sstd::tring os);
+    void set_os(std::string os);
 
     bool is_valid();
     unsigned int message_size();
