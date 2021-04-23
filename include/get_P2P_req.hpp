@@ -1,27 +1,21 @@
-#ifndef GET_RFC_MSG_H
-#define GET_RFC_MSG_H
+#ifndef GET_P2P_req_H
+#define GET_P2P_req_H
 
 #include "abst_msg.hpp"
 
 #include <cstddef>
 
 
-class GetRFCMessage : public AbstMessage {
+class GetP2PRequest : public AbstMessage {
 
 private:
-    int lengthHost;
-    int lengthOs;
 	std::string host;
 	std::string os;
 
 public:
     GetP2PRequest(void);
-    GetP2PRequest(short number);
+    GetP2PRequest(std::string host, std::string os);
 
-    int get_lengthHost();
-    void set_lengthHost(int length);
-    int get_lengthOs();
-    void set_lengthOs(int length);
     std::string get_host();
     void set_host(std::string host);
     std::string get_os();
