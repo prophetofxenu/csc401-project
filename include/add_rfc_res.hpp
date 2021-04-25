@@ -1,21 +1,24 @@
-#ifndef LIST_RFC_MSG_H
-#define LIST_RFC_MSG_H
+#ifndef ADD_RFC_RES_H
+#define ADD_RFC_RES_H
 
 #include "abst_msg.hpp"
 
 #include <cstddef>
 
 
-class ListRFCMessage : public AbstMessage {
+class AddRFCResponse : public AbstMessage {
 
 private:
+	int code;
 	std::string host;
 	int port;
 
 public:
-    ListRFCMessage(void);
-    ListRFCMessage(std::string host, int port);
+    AddRFCResponse(void);
+    AddRFCResponse(int code, std::string host, int port);
 
+    int get_code();
+    void set_code(int code);
     std::string get_host();
     void set_host(std::string host);
     int get_port();

@@ -22,7 +22,7 @@ public:
     int get_length();
     void set_length(int length);
     std::string get_content();
-    void set_os(std::string content);
+    void set_content(std::string content);
 
     bool is_valid();
     unsigned int message_size();

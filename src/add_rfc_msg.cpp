@@ -49,7 +49,7 @@ bool AddRFCMessage::is_valid() {
 
 
 unsigned int AddRFCMessage::message_size() {
-    return sizeof(int) + host.length() + title.length();
+    return sizeof(int) + sizeof(int) + sizeof(int) + host.length() + title.length();
 }
 
 

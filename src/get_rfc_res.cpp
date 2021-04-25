@@ -16,7 +16,7 @@ int GetRFCResponse::get_code() {
 }
 
 
-void GetRFCResponse::set_host(int code) {
+void GetRFCResponse::set_code(int code) {
     this->code = code;
 }
 
@@ -43,7 +43,7 @@ void GetRFCResponse::set_content(std::string content) {
 
 bool GetRFCResponse::is_valid() {
     // check that all fields are either positive or not empty
-	if ( code.length() <= 0 ) {
+	if ( code.length() > 0 ) {
 		if ( code != 200 && code != 400 && code != 404 && code != 505 ) {
 			return false;
 		} else if ( code == 200 ) {
@@ -51,13 +51,14 @@ bool GetRFCResponse::is_valid() {
 				return false;
 			}
 		}
+		return true
 	}
-    return true;
+    return false;
 }
 
 
 unsigned int GetRFCResponse::message_size() {
-    return sizeof(int) + sizeof(int) + content.length();
+    return sizeof(int) + sizeof(int) + sizeof(int) + content.length();
 }
 
 
@@ -93,6 +94,10 @@ std::byte* GetRFCResponse::to_bytes() {
 	if ( code == 200 ) {
 		// copy int bytes to buffer
 		std::memcpy(buf + pos, &length, sizeof(int));
+		// move pos forward int bytes, the amount we just copied
+		pos += sizeof(int);
+		// copy int bytes to buffer
+		std::memcpy(buf + pos, content.length(), sizeof(int));
 		// move pos forward int bytes, the amount we just copied
 		pos += sizeof(int);
 		// copy length bytes from to buffer

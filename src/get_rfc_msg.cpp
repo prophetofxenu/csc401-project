@@ -50,7 +50,7 @@ bool GetRFCMessage::is_valid() {
 
 
 unsigned int GetRFCMessage::message_size() {
-    return sizeof(short) + host.length() + os.length();
+    return sizeof(int) + sizeof(int) + sizeof(short) + host.length() + os.length();
 }
 
 
