@@ -43,7 +43,7 @@ void AddRFCResponse::set_length(int port) {
 
 bool AddRFCResponse::is_valid() {
     // check that all fields are either positive or not empty
-	if ( code.length() > 0 ) {
+	if ( code > 0 ) {
 		if ( code != 200 && code != 400 && code != 404 && code != 505 ) {
 			return false;
 		} else if ( code == 200 ) {
