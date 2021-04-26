@@ -3,15 +3,15 @@
 
 #include "abst_msg.hpp"
 
-#include <cstddef>
+#include <string>
 
 
 class GetRFCMessage : public AbstMessage {
 
 private:
     short number;
-	std::string host;
-	std::string os;
+    std::string host;
+    std::string os;
 
 public:
     GetRFCMessage(void);
