@@ -3,26 +3,26 @@
 
 #include "abst_msg.hpp"
 
-#include <cstddef>
+#include <string>
 
 
 class LookupRFCMessage : public AbstMessage {
 
 private:
-	std::string host;
-	int port;
-	std::string title;
+    int number;
+    std::string host;
+    int port;
 
 public:
     LookupRFCMessage(void);
-    LookupRFCMessage(std::string host, int port, std::string title);
+    LookupRFCMessage(int number, std::string host, int port);
 
+    int get_number();
+    void set_number(int number);
     std::string get_host();
     void set_host(std::string host);
     int get_port();
     void set_port(int port);
-    std::string get_title();
-    void set_title(std::string title);
 
     bool is_valid();
     unsigned int message_size();
