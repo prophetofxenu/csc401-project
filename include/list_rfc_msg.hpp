@@ -3,14 +3,14 @@
 
 #include "abst_msg.hpp"
 
-#include <cstddef>
+#include <string>
 
 
 class ListRFCMessage : public AbstMessage {
 
 private:
-	std::string host;
-	int port;
+    std::string host;
+    int port;
 
 public:
     ListRFCMessage(void);
