@@ -3,15 +3,15 @@
 
 #include "abst_msg.hpp"
 
-#include <cstddef>
+#include <string>
 
 
 class AddRFCResponse : public AbstMessage {
 
 private:
-	int code;
-	std::string host;
-	int port;
+    int code;
+    std::string host;
+    int port;
 
 public:
     AddRFCResponse(void);
