@@ -66,10 +66,11 @@ void GetRFCResponse::from_bytes(std::byte *bytes) {
         // move pos forward int bytes, the amount we just copied
         pos += sizeof(int);
         // copy enough bytes from byte sequence to find string
-        char content[length + 1];
+        char *content = new char[length + 1];
         std::memcpy(content, bytes + pos, length);
         content[length] = '\0';
         this->content = std::string(content);
+        delete[] content;
         // move pos forward length bytes, the amount we just copied
         pos += length;
     }
