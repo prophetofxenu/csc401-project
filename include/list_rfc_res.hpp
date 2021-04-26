@@ -3,14 +3,10 @@
 
 #include "abst_msg.hpp"
 
+#include "common.hpp"
+
 #include <list>
 #include <string>
-
-
-struct Client {
-    std::string host;
-    int port;
-};
 
 
 class ListRFCResponse : public AbstMessage {
