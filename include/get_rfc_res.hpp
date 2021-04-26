@@ -3,24 +3,21 @@
 
 #include "abst_msg.hpp"
 
-#include <cstddef>
+#include <string>
 
 
 class GetRFCResponse : public AbstMessage {
 
 private:
-	int code;
-	int length;
-	std::string content;
+    int code;
+    std::string content;
 
 public:
     GetRFCResponse(void);
-    GetRFCResponse(int code, int length, std::string content);
+    GetRFCResponse(int code, std::string content);
 
     int get_code();
     void set_code(int code);
-    int get_length();
-    void set_length(int length);
     std::string get_content();
     void set_content(std::string content);
 
