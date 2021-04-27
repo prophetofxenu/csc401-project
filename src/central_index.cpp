@@ -10,7 +10,7 @@ using std::list;
 #include <iostream>
 
 
-list<ConnectedClient> CentralIndex::clients;
+list<Client> CentralIndex::clients;
 mutex CentralIndex::clients_mut;
 list<RFCHolder> CentralIndex::rfcs;
 mutex CentralIndex::rfcs_mut;
@@ -20,13 +20,13 @@ bool CentralIndex::add_client(string hostname, int upload_port) {
     
     clients_mut.lock();
     for (auto client : clients) {
-        if (client.hostname == hostname && client.upload_port == upload_port) {
+        if (client.host == hostname && client.port == upload_port) {
             clients_mut.unlock();
             return false;
         }
     }
 
-    ConnectedClient client{ hostname, upload_port };
+    Client client{ hostname, upload_port };
     clients.push_back(client);
     
     clients_mut.unlock();
@@ -39,7 +39,7 @@ bool CentralIndex::remove_client(string hostname, int upload_port) {
 
     rfcs_mut.lock();
     for (auto it = rfcs.begin(); it != rfcs.end(); ) {
-        if (it->peer->hostname == hostname && it->peer->upload_port == upload_port) {
+        if (it->peer.host == hostname && it->peer.port == upload_port) {
             it = rfcs.erase(it);
         } else
             ++it;
@@ -48,7 +48,7 @@ bool CentralIndex::remove_client(string hostname, int upload_port) {
 
     clients_mut.lock();
     for (auto it = clients.begin(); it != clients.end(); it++) {
-        if (it->hostname == hostname && it->upload_port == upload_port) {
+        if (it->host == hostname && it->port == upload_port) {
             it = clients.erase(it);
             break;
         }
@@ -60,33 +60,34 @@ bool CentralIndex::remove_client(string hostname, int upload_port) {
 }
 
 
-bool CentralIndex::add_rfc(string hostname, int upload_port,
-        int rfc, string title) {
+bool CentralIndex::add_rfc(string hostname, int upload_port, int rfc) {
 
     rfcs_mut.lock();
     for (auto r : rfcs) {
-        if (r.rfc == rfc && r.title == title && r.peer->hostname == hostname &&
-                r.peer->upload_port == upload_port) {
+        if (r.rfc == rfc && r.peer.host == hostname &&
+                r.peer.port == upload_port) {
             rfcs_mut.unlock();
             return false;
         }
     }
 
     clients_mut.lock();
-    ConnectedClient *peer = nullptr;
+    Client peer;
+    bool found = false;
     for (auto it = clients.begin(); it != clients.end(); it++) {
-        if (it->hostname == hostname && it->upload_port == upload_port) {
-            peer = &(*it);
+        if (it->host == hostname && it->port == upload_port) {
+            peer = *it;
+            found = true;
             break;
         }
     }
-    if (peer == nullptr) {
+    if (!found) {
         clients_mut.unlock();
         rfcs_mut.unlock();
         return false;
     }
 
-    RFCHolder r{ rfc, title, peer };
+    RFCHolder r{ rfc, peer };
     rfcs.push_back(r);
 
     clients_mut.unlock();
@@ -96,17 +97,30 @@ bool CentralIndex::add_rfc(string hostname, int upload_port,
 }
 
 
-list<ConnectedClient> CentralIndex::find_rfcs(int rfc) {
+list<Client> CentralIndex::find_rfcs(int rfc) {
 
     rfcs_mut.lock();
-    list<ConnectedClient> l;
+    list<Client> l;
     for (auto it = rfcs.begin(); it != rfcs.end(); it++) {
         if (it->rfc == rfc) {
-            l.push_back(*(it->peer));
+            l.push_back(it->peer);
         }
     }
     rfcs_mut.unlock();
 
+    return l;
+
+}
+
+
+std::list<RFCHolder> CentralIndex::all_rfcs() {
+
+    rfcs_mut.lock();
+    list<RFCHolder> l;
+    for (auto it = rfcs.begin(); it != rfcs.end(); it++) {
+        l.push_back(*it);
+    }
+    rfcs_mut.unlock();
     return l;
 
 }

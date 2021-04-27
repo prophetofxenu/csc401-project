@@ -10,19 +10,13 @@ class LookupRFCMessage : public AbstMessage {
 
 private:
     int number;
-    std::string host;
-    int port;
 
 public:
     LookupRFCMessage(void);
-    LookupRFCMessage(int number, std::string host, int port);
+    LookupRFCMessage(int number);
 
     int get_number();
     void set_number(int number);
-    std::string get_host();
-    void set_host(std::string host);
-    int get_port();
-    void set_port(int port);
 
     bool is_valid();
     unsigned int message_size();

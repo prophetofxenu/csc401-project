@@ -1,32 +1,18 @@
 #ifndef CENTRAL_INDEX_H
 #define CENTRAL_INDEX_H
 
+#include "common.hpp"
+
 #include <mutex>
 #include <string>
 #include <list>
-
-
-/* Represents a client connected to the CI */
-typedef struct {
-    std::string hostname;
-    int upload_port;
-} ConnectedClient;
-
-
-/* Represents an association between a client and an RFC.
- * As in, a client has a local copy of an RFC. */
-typedef struct {
-    int rfc;
-    std::string title;
-    ConnectedClient *peer;
-} RFCHolder;
 
 
 /* Stores all of the data the central index needs to keep track of */
 class CentralIndex {
 
 private:
-    static std::list<ConnectedClient> clients;
+    static std::list<Client> clients;
     static std::mutex clients_mut;
     static std::list<RFCHolder> rfcs;
     static std::mutex rfcs_mut;
@@ -40,10 +26,13 @@ public:
 
     
     /* Represents a client stating they have an RFC */
-    static bool add_rfc(std::string hostname, int upload_port, int rfc, std::string title);
+    static bool add_rfc(std::string hostname, int upload_port, int rfc);
 
     /* Finds all the clients that have a local copy of an RFC */
-    static std::list<ConnectedClient> find_rfcs(int rfc);
+    static std::list<Client> find_rfcs(int rfc);
+
+    /* Gets all RFCs in the index */
+    static std::list<RFCHolder> all_rfcs();
 
 };
 

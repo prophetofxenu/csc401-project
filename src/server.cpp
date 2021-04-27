@@ -1,27 +1,116 @@
 #include "server_socket.hpp"
 #include "server_socket_listener.hpp"
+#include "central_index.hpp"
+#include "common.hpp"
+#include "add_rfc_msg.hpp"
+#include "add_rfc_res.hpp"
+#include "list_rfc_res.hpp"
+#include "lookup_rfc_msg.hpp"
+#include "lookup_rfc_res.hpp"
 
 #include <cstdlib>
 #include <iostream>
+#include <list>
+using std::list;
 
 
 int main(void) {
-    auto handler = [](ServerSocket *sock) {
-        int len;
-        sock->recv(&len, sizeof(int));
-        char buf[len];
-        sock->recv(buf, len);
-        std::cout << buf << std::endl;
 
-        char *msg = "Hello from server";
-        len = 18;
-        sock->send(&len, sizeof(int));
-        sock->send(msg, len);
-        exit(EXIT_SUCCESS);
+    auto handler = [](ServerSocket *sock) {
+        // get hostname
+        int host_len;
+        sock->recv(&host_len, sizeof(int));
+        char host_c[host_len + 1];
+        sock->recv(host_c, host_len);
+        host_c[host_len] = '\0';
+        std::string host(host_c);
+        // get upload port
+        int upload_port;
+        sock->recv(&upload_port, sizeof(int));
+        
+        // add to CI
+        CentralIndex::add_client(host, upload_port);
+        std::cout << "Connection from " << host << " (" << upload_port << ")" << std::endl;
+
+        // get message
+        P2SMessage message;
+        do {
+            sock->recv(&message, sizeof(P2SMessage));
+
+            switch (message) {
+
+                case P2SMessage::ADD: {
+                    std::byte *buf = new std::byte[sizeof(int)];
+                    AddRFCMessage msg;
+                    msg.from_bytes(buf);
+                    delete[] buf;
+
+                    int rfc_num = msg.get_number();
+                    int code = 200;
+                    if (!CentralIndex::add_rfc(host, upload_port, rfc_num))
+                        code = 400;
+                    
+                    AddRFCResponse res(code);
+                    buf = new std::byte[res.message_size()];
+                    sock->send(buf, res.message_size());
+                    delete[] buf;
+                    break;
+
+                }
+
+                case P2SMessage::LIST: {
+                    list<RFCHolder> holders = CentralIndex::all_rfcs();
+                    
+                    int code = holders.size() != 0 ? 200 : 404;
+                    ListRFCResponse res(code, holders);
+                    std::byte *buf = res.to_bytes();
+                    int tmp = res.message_size();
+                    sock->send(&tmp, sizeof(int));
+                    sock->send(buf, tmp);
+                    delete[] buf;
+                    break;
+
+                }
+
+                case P2SMessage::LOOKUP: {
+                    std::byte *buf = new std::byte[sizeof(int)];
+                    LookupRFCMessage msg;
+                    msg.from_bytes(buf);
+                    delete[] buf;
+
+                    int rfc_num = msg.get_number();
+                    list<Client> clients = CentralIndex::find_rfcs(rfc_num);
+                    int code = 200;
+                    if (clients.size() == 0)
+                        code = 404;
+
+                    LookupRFCResponse res(code, clients);
+                    buf = res.to_bytes();
+                    int tmp = res.message_size();
+                    sock->send(&tmp, sizeof(int));
+                    sock->send(buf, tmp);
+                    delete[] buf;
+
+                    break;
+                }
+
+                default:
+                    break;
+
+            }
+
+        } while (message != P2SMessage::DISCONNECT);
+
+        sock->close();
+
     };
 
     ServerSocketListener listener(8080, handler);
+    std::cout << "Server started" << std::endl;
     auto thread = listener.listen();
     thread->join();
+
+    return 0;
+
 }
 

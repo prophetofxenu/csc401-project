@@ -13,16 +13,16 @@ class ListRFCResponse : public AbstMessage {
 
 private:
     int code;
-    std::list<Client> hosts;
+    std::list<RFCHolder> holders;
 
 public:
     ListRFCResponse(void);
-    ListRFCResponse(int code, std::list<Client> hosts);
+    ListRFCResponse(int code, std::list<RFCHolder> holders);
 
     int get_code();
     void set_code(int code);
-    std::list<Client> get_hosts();
-    void set_hosts(std::list<Client> hosts);
+    std::list<RFCHolder> get_holders();
+    void set_holders(std::list<RFCHolder> holders);
 
     bool is_valid();
     unsigned int message_size();

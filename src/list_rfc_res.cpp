@@ -8,7 +8,7 @@ using std::byte;
 ListRFCResponse::ListRFCResponse(void) : code(0) {}
 
 
-ListRFCResponse::ListRFCResponse(int code, std::list<Client> hosts) : code(code), hosts(hosts) {}
+ListRFCResponse::ListRFCResponse(int code, std::list<RFCHolder> holders) : code(code), holders(holders) {}
 
 
 int ListRFCResponse::get_code() {
@@ -21,13 +21,13 @@ void ListRFCResponse::set_code(int code) {
 }
 
 
-std::list<Client> ListRFCResponse::get_hosts() {
-    return hosts;
+std::list<RFCHolder> ListRFCResponse::get_holders() {
+    return holders;
 }
 
 
-void ListRFCResponse::set_hosts(std::list<Client> hosts) {
-    this->hosts = hosts;
+void ListRFCResponse::set_holders(std::list<RFCHolder> holders) {
+    this->holders = holders;
 }
 
 
@@ -37,8 +37,8 @@ bool ListRFCResponse::is_valid() {
         if ( code != 200 && code != 400 && code != 404 && code != 505 ) {
             return false;
         } else if ( code == 200 ) {
-            for (auto it : hosts) {
-                if (it.host.length() == 0 || it.port <= 0)
+            for (auto it : holders) {
+                if (it.peer.host.length() == 0 || it.peer.port <= 0)
                     return false;
             }
         }
@@ -50,8 +50,8 @@ bool ListRFCResponse::is_valid() {
 
 unsigned int ListRFCResponse::message_size() {
     unsigned int size = sizeof(int) + sizeof(int);
-    for (auto it : hosts)
-        size += sizeof(int) + it.host.length() + sizeof(int);
+    for (auto it : holders)
+        size += sizeof(int) + sizeof(int) + it.peer.host.length() + sizeof(int);
     return size;
 }
 
@@ -67,6 +67,8 @@ void ListRFCResponse::from_bytes(std::byte *bytes) {
     std::string var_host = "";
     // use var_host to keep track of port
     int var_port = 0;
+    // rfc number
+    int rfc_num;
     // copy int bytes from byte sequence to length to find code
     std::memcpy(&code, bytes + pos, sizeof(int));
     if ( code == 200 ) {
@@ -77,6 +79,9 @@ void ListRFCResponse::from_bytes(std::byte *bytes) {
         // move pos forward int bytes, the amount we just copied
         pos += sizeof(int);
         for ( int i = 0; i < len_list; i++ ) {
+            // copy rfc num
+            std::memcpy(&rfc_num, bytes + pos, sizeof(int));
+            pos += sizeof(int);
             // copy int bytes from byte sequence to length to find length of host
             std::memcpy(&len_host, bytes + pos, sizeof(int));
             // move pos forward int bytes, the amount we just copied
@@ -90,9 +95,9 @@ void ListRFCResponse::from_bytes(std::byte *bytes) {
             std::memcpy(&var_port, bytes + pos, sizeof(int));
             pos += sizeof(int);
             // add to list
-            Client c { std::string(host), var_port };
+            RFCHolder h { rfc_num, Client { std::string(host), var_port }};
             delete[] host;
-            hosts.push_back(c);
+            holders.push_back(h);
         }
     }
 }
@@ -109,22 +114,26 @@ std::byte* ListRFCResponse::to_bytes() {
         // move pos forward int bytes, the amount we just copied
         pos += sizeof(int);
         // copy int bytes to buffer
-        int tmp = hosts.size();
+        int tmp = holders.size();
         std::memcpy(buf + pos, &tmp, sizeof(int));
         // move pos forward int bytes, the amount we just copied
         pos += sizeof(int);
-        for (auto it : hosts) {
+        for (auto it : holders) {
+            // copy rfc num to buffer
+            tmp = it.rfc;
+            std::memcpy(buf + pos, &tmp, sizeof(int));
+            pos += sizeof(int);
             // copy int bytes to buffer
-            tmp = it.host.length();
+            tmp = it.peer.host.length();
             std::memcpy(buf + pos, &tmp, sizeof(int));
             // move pos forward int bytes, the amount we just copied
             pos += sizeof(int);
             // copy host bytes to buffer
-            std::memcpy(buf + pos, it.host.c_str(), it.host.length());
+            std::memcpy(buf + pos, it.peer.host.c_str(), it.peer.host.length());
             // move pos forward length bytes, the amount we just copied
-            pos += it.host.length();
+            pos += it.peer.host.length();
             // copy int bytes to buffer
-            std::memcpy(buf + pos, &(it.port), sizeof(int));
+            std::memcpy(buf + pos, &(it.peer.port), sizeof(int));
             pos += sizeof(int);
         }
     }

@@ -9,19 +9,12 @@
 class AddRFCMessage : public AbstMessage {
 
 private:
-    std::string host;
-    int port;
     int number;
 
 public:
     AddRFCMessage(void);
-    AddRFCMessage(std::string host, int port, int number);
-    ~AddRFCMessage();
+    AddRFCMessage(int number);
 
-    std::string get_host();
-    void set_host(std::string host);
-    int get_port();
-    void set_port(int port);
     int get_number();
     void set_number(int number);
 

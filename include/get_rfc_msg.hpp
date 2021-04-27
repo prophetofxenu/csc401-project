@@ -10,19 +10,13 @@ class GetRFCMessage : public AbstMessage {
 
 private:
     short number;
-    std::string host;
-    std::string os;
 
 public:
     GetRFCMessage(void);
-    GetRFCMessage(short number, std::string host, std::string os);
+    GetRFCMessage(short number);
 
     short get_number();
     void set_number(short number);
-    std::string get_host();
-    void set_host(std::string host);
-    std::string get_os();
-    void set_os(std::string os);
 
     bool is_valid();
     unsigned int message_size();
