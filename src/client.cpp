@@ -51,7 +51,7 @@ bool add_available_rfcs(ClientSocket &sock, RFCManager &rfc_manager) {
 }
 
 
-void get_from_peer(std::string &my_host, int my_port, RFCManager &rfc_manager,
+bool get_from_peer(std::string &my_host, int my_port, RFCManager &rfc_manager,
         int rfc_num, Client &client) {
 
     // connect to peer
@@ -76,7 +76,6 @@ void get_from_peer(std::string &my_host, int my_port, RFCManager &rfc_manager,
 
     // get response
     sock.recv(&tmp, sizeof(int));
-    std::cout << "size: " << tmp << std::endl;
     buf = new std::byte[tmp];
     sock.recv(buf, tmp);
     GetRFCResponse get_res;
@@ -86,7 +85,7 @@ void get_from_peer(std::string &my_host, int my_port, RFCManager &rfc_manager,
     if (get_res.get_code() == 404) {
         std::cout << "Peer returned 404 for RFC" << rfc_num << std::endl;
         sock.disconnect();
-        return;
+        return false;
     }
 
     std::string content = get_res.get_content();
@@ -98,6 +97,8 @@ void get_from_peer(std::string &my_host, int my_port, RFCManager &rfc_manager,
     p2p_msg = P2PMessage::DISCONNECT;
     sock.send(&p2p_msg, sizeof(P2PMessage));
     sock.disconnect();
+
+    return true;
 
 }
 
@@ -248,7 +249,25 @@ int main(int argc, char *argv[]) {
             }
 
             Client peer = lookup_res.get_hosts().front();
-            get_from_peer(address, port, rfc_manager, rfc_num, peer);
+            if (!get_from_peer(address, port, rfc_manager, rfc_num, peer))
+                continue;
+
+            // notify index
+            p2s_message = P2SMessage::ADD;
+            sock.send(&p2s_message, sizeof(P2SMessage));
+            AddRFCMessage add_msg(rfc_num);
+            buf = add_msg.to_bytes();
+            sock.send(buf, add_msg.message_size());
+            delete[] buf;
+
+            buf = new std::byte[sizeof(int)];
+            sock.recv(buf, sizeof(int));
+            AddRFCResponse add_res;
+            add_res.from_bytes(buf);
+            delete[] buf;
+            if (add_res.get_code() != 200) {
+                std::cout << "Error notifying index" << std::endl;
+            }
 
         } else if (input == "list") {
 

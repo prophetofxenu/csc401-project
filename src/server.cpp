@@ -27,10 +27,10 @@ int main(void) {
         // get upload port
         int upload_port;
         sock->recv(&upload_port, sizeof(int));
+        std::cout << "  CONNECT - " << host << " (" << upload_port << ")" << std::endl;
         
         // add to CI
         CentralIndex::add_client(host, upload_port);
-        std::cout << "Connection from " << host << " (" << upload_port << ")" << std::endl;
 
         // get message
         P2SMessage message;
@@ -40,7 +40,6 @@ int main(void) {
             switch (message) {
 
                 case P2SMessage::ADD: {
-                    std::cout << "ADD" << std::endl;
                     std::byte *buf = new std::byte[sizeof(int)];
                     sock->recv(buf, sizeof(int));
                     AddRFCMessage msg;
@@ -56,12 +55,13 @@ int main(void) {
                     buf = res.to_bytes();
                     sock->send(buf, res.message_size());
                     delete[] buf;
+                    std::cout << "      ADD - " << host << " (" << upload_port << ")"
+                        << " RFC" << rfc_num << std::endl;
                     break;
 
                 }
 
                 case P2SMessage::LIST: {
-                    std::cout << "LIST" << std::endl;
                     list<RFCHolder> holders = CentralIndex::all_rfcs();
                     
                     int code = holders.size() != 0 ? 200 : 404;
@@ -71,12 +71,12 @@ int main(void) {
                     sock->send(&tmp, sizeof(int));
                     sock->send(buf, tmp);
                     delete[] buf;
+                    std::cout << "     LIST - " << host << " (" << upload_port << ")" << std::endl;
                     break;
 
                 }
 
                 case P2SMessage::LOOKUP: {
-                    std::cout << "LOOKUP" << std::endl;
                     std::byte *buf = new std::byte[sizeof(int)];
                     sock->recv(buf, sizeof(int));
                     LookupRFCMessage msg;
@@ -95,7 +95,8 @@ int main(void) {
                     sock->send(&tmp, sizeof(int));
                     sock->send(buf, tmp);
                     delete[] buf;
-
+                    std::cout << "   LOOKUP - " << host << " (" << upload_port << ") RFC"
+                        << rfc_num <<std::endl;
                     break;
                 }
 
@@ -108,13 +109,13 @@ int main(void) {
 
         // remove from CI
         CentralIndex::remove_client(host, upload_port);
-        std::cout << host << " (" << upload_port << ") disconnected" << std::endl;
+        std::cout << "DISCONNECT - " << host << " (" << upload_port << ")" << std::endl;
         sock->close();
 
     };
 
     ServerSocketListener listener(8080, handler);
-    std::cout << "Server started" << std::endl;
+    std::cout << "Server started\n" << std::endl;
     auto thread = listener.listen();
     thread->join();
 
