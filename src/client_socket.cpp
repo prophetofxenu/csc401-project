@@ -59,6 +59,7 @@ bool ClientSocket::is_connected() {
 
 
 void ClientSocket::send(void *data, size_t len) {
+    // TODO make this more reliable
     if (::send(sock_fd, data, len, 0) != len) {
         std::cerr << "Error sending bytes to server" << std::endl;
     }
@@ -66,8 +67,11 @@ void ClientSocket::send(void *data, size_t len) {
 
 
 void ClientSocket::recv(void *buf, size_t len) {
-    if (::recv(sock_fd, buf, len, 0) != len) {
-        std::cerr << "Error receiving bytes from server" << std::endl;
+    // TODO change buf to std::byte *
+    char *b = reinterpret_cast<char*>(buf);
+    size_t received = 0;
+    while (received < len) {
+        received += ::recv(sock_fd, b + received, len - received, 0);
     }
 }
 

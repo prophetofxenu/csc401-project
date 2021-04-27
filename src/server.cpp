@@ -40,7 +40,9 @@ int main(void) {
             switch (message) {
 
                 case P2SMessage::ADD: {
+                    std::cout << "ADD" << std::endl;
                     std::byte *buf = new std::byte[sizeof(int)];
+                    sock->recv(buf, sizeof(int));
                     AddRFCMessage msg;
                     msg.from_bytes(buf);
                     delete[] buf;
@@ -51,7 +53,7 @@ int main(void) {
                         code = 400;
                     
                     AddRFCResponse res(code);
-                    buf = new std::byte[res.message_size()];
+                    buf = res.to_bytes();
                     sock->send(buf, res.message_size());
                     delete[] buf;
                     break;
@@ -59,6 +61,7 @@ int main(void) {
                 }
 
                 case P2SMessage::LIST: {
+                    std::cout << "LIST" << std::endl;
                     list<RFCHolder> holders = CentralIndex::all_rfcs();
                     
                     int code = holders.size() != 0 ? 200 : 404;
@@ -73,7 +76,9 @@ int main(void) {
                 }
 
                 case P2SMessage::LOOKUP: {
+                    std::cout << "LOOKUP" << std::endl;
                     std::byte *buf = new std::byte[sizeof(int)];
+                    sock->recv(buf, sizeof(int));
                     LookupRFCMessage msg;
                     msg.from_bytes(buf);
                     delete[] buf;
@@ -101,6 +106,9 @@ int main(void) {
 
         } while (message != P2SMessage::DISCONNECT);
 
+        // remove from CI
+        CentralIndex::remove_client(host, upload_port);
+        std::cout << host << " (" << upload_port << ") disconnected" << std::endl;
         sock->close();
 
     };
