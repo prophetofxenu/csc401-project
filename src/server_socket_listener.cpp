@@ -12,9 +12,39 @@
 #include <iostream>
 #include <functional>
 using std::function;
+#include <chrono>
 
 
-ServerSocketListener::ServerSocketListener(int port, function<void(ServerSocket*)> handler) {
+void ServerSocketListener::start_cleanup() {
+
+    using namespace std::chrono_literals;
+
+    this->cleanup_thread = new std::thread([=]() {
+
+        while (this->is_listening()) {
+        
+            for (auto it = client_threads.begin(); it != client_threads.end(); ) {
+                if (*it->is_finished) {
+                    it->thread->join();
+                    delete it->thread;
+                    delete it->sock;
+                    delete it->is_finished;
+                    it = client_threads.erase(it);
+                } else {
+                    it++;
+                }
+            }
+
+            std::this_thread::sleep_for(5000ms);
+
+        }
+
+    }); 
+
+}
+
+
+ServerSocketListener::ServerSocketListener(int port, function<void(ServerSocket*, bool*)> handler) {
     this->port = port;
     this->handler = handler;
     listen_thread = nullptr;
@@ -51,7 +81,6 @@ std::thread* ServerSocketListener::listen() {
     }
 
     auto listen_thread = new std::thread([=](ServerSocketListener *t) {
-        std::cout << "Started listen thread" << std::endl;
         while (true) {
             int new_sock;
             if ((new_sock = accept(t->sock_fd, (struct sockaddr *) &address, (socklen_t *) &addrlen)) < 0) {
@@ -59,13 +88,15 @@ std::thread* ServerSocketListener::listen() {
                 return;
             }
             ServerSocket *conn = new ServerSocket(new_sock);
-            std::thread *thread = new std::thread(handler, conn);
-            t->client_sockets.push_back(conn);
-            t->client_threads.push_back(thread);
+            bool *is_finished = new bool;
+            *is_finished = false;
+            std::thread *thread = new std::thread(handler, conn, is_finished);
+            t->client_threads.push_back(ThreadKeeper { thread, conn, is_finished });
         }
     }, this);
 
     this->listen_thread = listen_thread;
+    start_cleanup();
     return listen_thread;
 
 }
@@ -86,13 +117,12 @@ void ServerSocketListener::close() {
         return;
     listen_thread->join();
     delete listen_thread;
+    cleanup_thread->join();
+    delete cleanup_thread;
 
     for (auto& t : client_threads) {
-        t->join();
+        t.thread->join();
     }
 
-    for (ServerSocket* p : client_sockets) {
-        delete p;
-    }
 }
 

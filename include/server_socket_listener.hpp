@@ -10,6 +10,13 @@
 #include <functional>
 
 
+struct ThreadKeeper {
+    std::thread *thread;
+    ServerSocket *sock;
+    bool *is_finished;
+};
+
+
 class ServerSocketListener : public AbstServerSocketListener {
 
 private:
@@ -17,15 +24,17 @@ private:
     int sock_fd;
     int port;
 
-    std::function<void(ServerSocket*)> handler;
+    std::function<void(ServerSocket*, bool*)> handler;
 
     std::thread *listen_thread;
-    std::vector<std::thread*> client_threads;
-    std::vector<ServerSocket*> client_sockets;
+    std::thread *cleanup_thread;
+    std::vector<ThreadKeeper> client_threads;
+
+    void start_cleanup();
 
 public:
     
-    ServerSocketListener(int port, std::function<void(ServerSocket*)> handler);
+    ServerSocketListener(int port, std::function<void(ServerSocket*, bool*)> handler);
     virtual std::thread* listen();
     virtual bool is_listening();
     std::thread* get_listen_thread();

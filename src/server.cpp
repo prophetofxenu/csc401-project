@@ -16,7 +16,7 @@ using std::list;
 
 int main(void) {
 
-    auto handler = [](ServerSocket *sock) {
+    auto handler = [](ServerSocket *sock, bool *is_finished) {
         // get hostname
         int host_len;
         sock->recv(&host_len, sizeof(int));
@@ -111,6 +111,8 @@ int main(void) {
         CentralIndex::remove_client(host, upload_port);
         std::cout << "DISCONNECT - " << host << " (" << upload_port << ")" << std::endl;
         sock->close();
+
+        *is_finished = true;
 
     };
 

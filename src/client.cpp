@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
 
     RFCManager rfc_manager(rfc_dir);
 
-    auto handler = [&](ServerSocket *sock) {
+    auto handler = [&](ServerSocket *sock, bool *is_finished) {
 
         // get hostname
         int host_len;
@@ -188,6 +188,8 @@ int main(int argc, char *argv[]) {
             }
 
         } while (message != P2PMessage::DISCONNECT);
+
+        *is_finished = true;
         
     };
 

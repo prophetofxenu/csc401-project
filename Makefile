@@ -4,11 +4,11 @@ CXXFLAGS = $(CFLAGS) -std=c++17
 INCLUDES = -I include/
 LIBS = -lpthread
 
+INCLUDE = include
 SRC = src
 BUILD = build
 
-OBJECTS =  $(BUILD)/abst_msg.o
-OBJECTS += $(BUILD)/add_rfc_msg.o
+OBJECTS =  $(BUILD)/add_rfc_msg.o
 OBJECTS += $(BUILD)/add_rfc_res.o
 OBJECTS += $(BUILD)/central_index.o
 OBJECTS += $(BUILD)/client_socket.o
