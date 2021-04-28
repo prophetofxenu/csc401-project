@@ -21,6 +21,7 @@
 void print_cli_help() {
 
     std::cout << "list              - display list of RFCs on index" << std::endl;
+    std::cout << "listl             - display list of local RFCs " << std::endl;
     std::cout << "get <rfc number>  - get an RFC by number" << std::endl;
     std::cout << "quit              - disconnect from index and quit the program" << std::endl;
 
@@ -118,12 +119,27 @@ void print_rfc_list(const std::list<RFCHolder> &list) {
 }
 
 
+bool check_if_rfc_stored(int rfc, RFCManager &rfc_manager) {
+    for (auto it : rfc_manager.get_rfcs()) {
+        if (rfc == it)
+            return true;
+    }
+    return false;
+}
+
+
 void get_rfc(ClientSocket &sock, int rfc_num, std::string &my_host, int my_port,
         RFCManager &rfc_manager) {
 
     //int rfc_num = std::stoi(cm[1]);
     if (rfc_num <= 0) {
         std::cout << "RFC number must be positive integer" << std::endl;
+        return;
+    }
+
+    // check if already have rfc
+    if (check_if_rfc_stored(rfc_num, rfc_manager)) {
+        std::cout << "Already have RFC" << rfc_num << std::endl;
         return;
     }
 
@@ -192,6 +208,21 @@ void list_rfcs_remote(ClientSocket &sock) {
     }
 
     print_rfc_list(res.get_holders());
+
+}
+
+
+void list_rfcs_local(RFCManager &rfc_manager) {
+
+    std::list<int> rfcs = rfc_manager.get_rfcs();
+    if (rfcs.size() == 0) {
+        std::cout << "No RFCs stored locally" << std::endl;
+        return;
+    }
+    std::cout << "| RFC  |" << std::endl;
+    for (auto it : rfcs) {
+        std::cout << "| " << std::setw(4) << it << " |" << std::endl;
+    }
 
 }
 
@@ -329,6 +360,10 @@ int main(int argc, char *argv[]) {
         } else if (input == "list") {
 
             list_rfcs_remote(sock);
+
+        } else if (input == "listl") {
+
+            list_rfcs_local(rfc_manager);
 
         } else if (input == "help") {
             print_cli_help();
