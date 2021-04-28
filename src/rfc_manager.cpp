@@ -72,6 +72,7 @@ list<int> RFCManager::get_rfcs() {
     }
 
     closedir(dir);
+    l.sort();
     return l;
 
 }

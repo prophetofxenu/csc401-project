@@ -106,14 +106,17 @@ bool get_from_peer(std::string &my_host, int my_port, RFCManager &rfc_manager,
 }
 
 
-void print_rfc_list(const std::list<RFCHolder> &list) {
+void print_rfc_list(const std::list<RFCHolder> &list, std::string &host, int upload_port) {
 
     std::cout << "| RFC  | Host            | Port  |" << std::endl;
     for (auto it : list) {
         std::cout << "| ";
         std::cout << std::setw(4) << it.rfc << " | ";
         std::cout << std::setw(15) << it.peer.host << " | ";
-        std::cout << std::setw(5) << it.peer.port << " |" << std::endl;
+        std::cout << std::setw(5) << it.peer.port << " |";
+        if (it.peer.host == host && it.peer.port == upload_port)
+            std::cout << " (this node)";
+        std::cout << std::endl;
     }
 
 }
@@ -188,7 +191,7 @@ void get_rfc(ClientSocket &sock, int rfc_num, std::string &my_host, int my_port,
 }
 
 
-void list_rfcs_remote(ClientSocket &sock) {
+void list_rfcs_remote(ClientSocket &sock, std::string &host, int upload_port) {
 
     P2SMessage p2s_message = P2SMessage::LIST;
     sock.send(&p2s_message, sizeof(P2SMessage));
@@ -207,7 +210,7 @@ void list_rfcs_remote(ClientSocket &sock) {
         return;
     }
 
-    print_rfc_list(res.get_holders());
+    print_rfc_list(res.get_holders(), host, upload_port);
 
 }
 
@@ -359,7 +362,7 @@ int main(int argc, char *argv[]) {
 
         } else if (input == "list") {
 
-            list_rfcs_remote(sock);
+            list_rfcs_remote(sock, address, port);
 
         } else if (input == "listl") {
 

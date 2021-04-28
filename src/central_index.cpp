@@ -16,6 +16,15 @@ list<RFCHolder> CentralIndex::rfcs;
 mutex CentralIndex::rfcs_mut;
 
 
+bool compare_rfc_holders(const RFCHolder &first, const RFCHolder &second) {
+    if (first.rfc != second.rfc)
+        return first.rfc < second.rfc;
+    if (first.peer.host != second.peer.host)
+        return first.peer.host < second.peer.host;
+    return first.peer.port < second.peer.port;
+}
+
+
 bool CentralIndex::add_client(string hostname, int upload_port) {
     
     clients_mut.lock();
@@ -89,6 +98,7 @@ bool CentralIndex::add_rfc(string hostname, int upload_port, int rfc) {
 
     RFCHolder r{ rfc, peer };
     rfcs.push_back(r);
+    rfcs.sort(compare_rfc_holders);
 
     clients_mut.unlock();
     rfcs_mut.unlock();
