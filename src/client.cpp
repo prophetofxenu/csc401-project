@@ -14,6 +14,8 @@
 #include <iostream>
 #include <iomanip>
 #include <regex>
+#include <functional>
+#include <csignal>
 
 
 void print_cli_help() {
@@ -116,6 +118,91 @@ void print_rfc_list(const std::list<RFCHolder> &list) {
 }
 
 
+void get_rfc(ClientSocket &sock, int rfc_num, std::string &my_host, int my_port,
+        RFCManager &rfc_manager) {
+
+    //int rfc_num = std::stoi(cm[1]);
+    if (rfc_num <= 0) {
+        std::cout << "RFC number must be positive integer" << std::endl;
+        return;
+    }
+
+    // lookup RFC
+    P2SMessage p2s_message = P2SMessage::LOOKUP;
+    sock.send(&p2s_message, sizeof(P2SMessage));
+    LookupRFCMessage lookup_msg(rfc_num);
+    std::byte *buf = lookup_msg.to_bytes();
+    sock.send(buf, lookup_msg.message_size());
+    delete[] buf;
+
+    // get response
+    int tmp;
+    sock.recv(&tmp, sizeof(int));
+    buf = new std::byte[tmp];
+    sock.recv(buf, tmp);
+    LookupRFCResponse lookup_res;
+    lookup_res.from_bytes(buf);
+    delete[] buf;
+    if (lookup_res.get_code() == 404) {
+        std::cout << "No nodes with RFC" << rfc_num << std::endl;
+        return;
+    }
+
+    Client peer = lookup_res.get_hosts().front();
+    if (!get_from_peer(my_host, my_port, rfc_manager, rfc_num, peer))
+        return;
+
+    // notify index
+    p2s_message = P2SMessage::ADD;
+    sock.send(&p2s_message, sizeof(P2SMessage));
+    AddRFCMessage add_msg(rfc_num);
+    buf = add_msg.to_bytes();
+    sock.send(buf, add_msg.message_size());
+    delete[] buf;
+
+    buf = new std::byte[sizeof(int)];
+    sock.recv(buf, sizeof(int));
+    AddRFCResponse add_res;
+    add_res.from_bytes(buf);
+    delete[] buf;
+    if (add_res.get_code() != 200) {
+        std::cout << "Error notifying index" << std::endl;
+    }
+
+}
+
+
+void list_rfcs_remote(ClientSocket &sock) {
+
+    P2SMessage p2s_message = P2SMessage::LIST;
+    sock.send(&p2s_message, sizeof(P2SMessage));
+
+    // get response
+    int tmp;
+    sock.recv(&tmp, sizeof(int));
+    std::byte *buf = new std::byte[tmp];
+    sock.recv(buf, tmp);
+    ListRFCResponse res;
+    res.from_bytes(buf);
+    delete[] buf;
+
+    if (res.get_code() == 404) {
+        std::cout << "No RFCs are in the index" << std::endl;
+        return;
+    }
+
+    print_rfc_list(res.get_holders());
+
+}
+
+
+void disconnect(ClientSocket& sock) {
+    P2SMessage msg = P2SMessage::DISCONNECT;
+    sock.send(&msg, sizeof(P2SMessage));
+    sock.disconnect();
+}
+
+
 int main(int argc, char *argv[]) {
 
     if (argc != 4) {
@@ -132,6 +219,8 @@ int main(int argc, char *argv[]) {
 
     RFCManager rfc_manager(rfc_dir);
 
+    // handler for connections from other peers
+    // defined here as lambda so we can use rfc_manager
     auto handler = [&](ServerSocket *sock, bool *is_finished) {
 
         // get hostname
@@ -223,7 +312,7 @@ int main(int argc, char *argv[]) {
     // add available RFCs
     add_available_rfcs(sock, rfc_manager);
 
-
+    // regex for parsing get command
     std::regex re_get("^get (\\d+)$");
     std::string input;
     do {
@@ -235,73 +324,11 @@ int main(int argc, char *argv[]) {
         if (cm.size() == 2) {
 
             int rfc_num = std::stoi(cm[1]);
-            if (rfc_num <= 0) {
-                std::cout << "RFC number must be positive integer" << std::endl;
-                continue;
-            }
-
-            // lookup RFC
-            P2SMessage p2s_message = P2SMessage::LOOKUP;
-            sock.send(&p2s_message, sizeof(P2SMessage));
-            LookupRFCMessage lookup_msg(rfc_num);
-            std::byte *buf = lookup_msg.to_bytes();
-            sock.send(buf, lookup_msg.message_size());
-            delete[] buf;
-
-            // get response
-            int tmp;
-            sock.recv(&tmp, sizeof(int));
-            buf = new std::byte[tmp];
-            sock.recv(buf, tmp);
-            LookupRFCResponse lookup_res;
-            lookup_res.from_bytes(buf);
-            delete[] buf;
-            if (lookup_res.get_code() == 404) {
-                std::cout << "No nodes with RFC" << rfc_num << std::endl;
-                continue;
-            }
-
-            Client peer = lookup_res.get_hosts().front();
-            if (!get_from_peer(address, port, rfc_manager, rfc_num, peer))
-                continue;
-
-            // notify index
-            p2s_message = P2SMessage::ADD;
-            sock.send(&p2s_message, sizeof(P2SMessage));
-            AddRFCMessage add_msg(rfc_num);
-            buf = add_msg.to_bytes();
-            sock.send(buf, add_msg.message_size());
-            delete[] buf;
-
-            buf = new std::byte[sizeof(int)];
-            sock.recv(buf, sizeof(int));
-            AddRFCResponse add_res;
-            add_res.from_bytes(buf);
-            delete[] buf;
-            if (add_res.get_code() != 200) {
-                std::cout << "Error notifying index" << std::endl;
-            }
+            get_rfc(sock, rfc_num, address, port, rfc_manager);
 
         } else if (input == "list") {
 
-            P2SMessage p2s_message = P2SMessage::LIST;
-            sock.send(&p2s_message, sizeof(P2SMessage));
-
-            // get response
-            int tmp;
-            sock.recv(&tmp, sizeof(int));
-            std::byte *buf = new std::byte[tmp];
-            sock.recv(buf, tmp);
-            ListRFCResponse res;
-            res.from_bytes(buf);
-            delete[] buf;
-
-            if (res.get_code() == 404) {
-                std::cout << "No RFCs are in the index" << std::endl;
-                continue;
-            }
-
-            print_rfc_list(res.get_holders());
+            list_rfcs_remote(sock);
 
         } else if (input == "help") {
             print_cli_help();
@@ -311,9 +338,7 @@ int main(int argc, char *argv[]) {
 
     } while (input != "quit");
 
-    P2SMessage msg = P2SMessage::DISCONNECT;
-    sock.send(&msg, sizeof(P2SMessage));
-    sock.disconnect();
+    disconnect(sock);
 
     return 0;
 }
