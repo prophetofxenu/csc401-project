@@ -12,6 +12,7 @@
 #include <iostream>
 #include <list>
 using std::list;
+#include <arpa/inet.h>
 
 
 void add_rfc(ServerSocket *sock, std::string &host, int upload_port) {
@@ -45,7 +46,9 @@ void list_rfcs(ServerSocket *sock, std::string &host, int upload_port) {
     ListRFCResponse res(code, holders);
     std::byte *buf = res.to_bytes();
     int tmp = res.message_size();
+    tmp = htonl(tmp);
     sock->send(&tmp, sizeof(int));
+    tmp = ntohl(tmp);
     sock->send(buf, tmp);
     delete[] buf;
     std::cout << "      LIST - " << host << " (" << upload_port << ")" << std::endl;
@@ -70,7 +73,9 @@ void lookup_rfc(ServerSocket *sock, std::string &host, int upload_port) {
     LookupRFCResponse res(code, clients);
     buf = res.to_bytes();
     int tmp = res.message_size();
+    tmp = htonl(tmp);
     sock->send(&tmp, sizeof(int));
+    tmp = ntohl(tmp);
     sock->send(buf, tmp);
     delete[] buf;
     std::cout << "    LOOKUP - " << host << " (" << upload_port << ") RFC"
@@ -82,10 +87,12 @@ void lookup_rfc(ServerSocket *sock, std::string &host, int upload_port) {
 void client_handler(ServerSocket *sock, bool *is_finished) {
 
     // get and send protocol version
-    int server_version = PROTOCOL_VERSION;
+    int server_version = htonl(PROTOCOL_VERSION);
     sock->send(&server_version, sizeof(int));
+    server_version = ntohl(server_version);
     int client_version;
     sock->recv(&client_version, sizeof(int));
+    client_version = ntohl(client_version);
     if (server_version != client_version) {
         std::cout << "Client tried connecting, but uses unsupported protocol version"
             << std::endl;
@@ -96,6 +103,7 @@ void client_handler(ServerSocket *sock, bool *is_finished) {
     // get hostname
     int host_len;
     sock->recv(&host_len, sizeof(int));
+    host_len = ntohl(host_len);
     char host_c[host_len + 1];
     sock->recv(host_c, host_len);
     host_c[host_len] = '\0';
@@ -103,6 +111,7 @@ void client_handler(ServerSocket *sock, bool *is_finished) {
     // get upload port
     int upload_port;
     sock->recv(&upload_port, sizeof(int));
+    upload_port = ntohl(upload_port);
     std::cout << "   CONNECT - " << host << " (" << upload_port << ")" << std::endl;
     
     // add to CI
@@ -112,6 +121,7 @@ void client_handler(ServerSocket *sock, bool *is_finished) {
     P2SMessage message;
     do {
         sock->recv(&message, sizeof(P2SMessage));
+        message = static_cast<P2SMessage>(ntohl(static_cast<int>(message)));
 
         switch (message) {
 

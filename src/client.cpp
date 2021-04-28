@@ -16,6 +16,7 @@
 #include <regex>
 #include <functional>
 #include <csignal>
+#include <arpa/inet.h>
 
 
 void print_cli_help() {
@@ -31,8 +32,8 @@ void print_cli_help() {
 bool add_available_rfcs(ClientSocket &sock, RFCManager &rfc_manager) {
     
     for (auto it : rfc_manager.get_rfcs()) {
-        P2SMessage add_msg = P2SMessage::ADD;
-        sock.send(&add_msg, sizeof(P2SMessage));
+        int tmp = htonl(static_cast<int>(P2SMessage::ADD));
+        sock.send(&tmp, sizeof(P2SMessage));
         AddRFCMessage msg(it);
         std::byte *buf = msg.to_bytes();
         sock.send(buf, sizeof(int));
@@ -64,14 +65,17 @@ bool get_from_peer(std::string &my_host, int my_port, RFCManager &rfc_manager,
         << ")" << std::endl;
     // send hostname
     int tmp = my_host.length();
+    tmp = htonl(tmp);
     sock.send(&tmp, sizeof(int));
+    tmp = ntohl(tmp);
     sock.send(const_cast<char*>(my_host.c_str()), tmp);
     // send upload port
-    sock.send(&my_port, sizeof(int));
+    tmp = htonl(my_port);
+    sock.send(&tmp, sizeof(int));
 
     // send request
-    P2PMessage p2p_msg = P2PMessage::GET;
-    sock.send(&p2p_msg, sizeof(P2PMessage));
+    tmp = htonl(static_cast<int>(P2PMessage::GET));
+    sock.send(&tmp, sizeof(P2PMessage));
     GetRFCMessage get_msg(rfc_num);
     std::byte *buf = get_msg.to_bytes();
     sock.send(buf, get_msg.message_size());
@@ -79,6 +83,7 @@ bool get_from_peer(std::string &my_host, int my_port, RFCManager &rfc_manager,
 
     // get response
     sock.recv(&tmp, sizeof(int));
+    tmp = ntohl(tmp);
     buf = new std::byte[tmp];
     sock.recv(buf, tmp);
     GetRFCResponse get_res;
@@ -97,8 +102,8 @@ bool get_from_peer(std::string &my_host, int my_port, RFCManager &rfc_manager,
 
     // disconnect
 
-    p2p_msg = P2PMessage::DISCONNECT;
-    sock.send(&p2p_msg, sizeof(P2PMessage));
+    tmp = htonl(static_cast<int>(P2PMessage::DISCONNECT));
+    sock.send(&tmp, sizeof(P2PMessage));
     sock.disconnect();
 
     return true;
@@ -134,7 +139,6 @@ bool check_if_rfc_stored(int rfc, RFCManager &rfc_manager) {
 void get_rfc(ClientSocket &sock, int rfc_num, std::string &my_host, int my_port,
         RFCManager &rfc_manager) {
 
-    //int rfc_num = std::stoi(cm[1]);
     if (rfc_num <= 0) {
         std::cout << "RFC number must be positive integer" << std::endl;
         return;
@@ -147,16 +151,16 @@ void get_rfc(ClientSocket &sock, int rfc_num, std::string &my_host, int my_port,
     }
 
     // lookup RFC
-    P2SMessage p2s_message = P2SMessage::LOOKUP;
-    sock.send(&p2s_message, sizeof(P2SMessage));
+    int tmp = htonl(static_cast<int>(P2SMessage::LOOKUP));
+    sock.send(&tmp, sizeof(P2SMessage));
     LookupRFCMessage lookup_msg(rfc_num);
     std::byte *buf = lookup_msg.to_bytes();
     sock.send(buf, lookup_msg.message_size());
     delete[] buf;
 
     // get response
-    int tmp;
     sock.recv(&tmp, sizeof(int));
+    tmp = ntohl(tmp);
     buf = new std::byte[tmp];
     sock.recv(buf, tmp);
     LookupRFCResponse lookup_res;
@@ -172,8 +176,8 @@ void get_rfc(ClientSocket &sock, int rfc_num, std::string &my_host, int my_port,
         return;
 
     // notify index
-    p2s_message = P2SMessage::ADD;
-    sock.send(&p2s_message, sizeof(P2SMessage));
+    tmp = htonl(static_cast<int>(P2SMessage::ADD));
+    sock.send(&tmp, sizeof(P2SMessage));
     AddRFCMessage add_msg(rfc_num);
     buf = add_msg.to_bytes();
     sock.send(buf, add_msg.message_size());
@@ -193,12 +197,12 @@ void get_rfc(ClientSocket &sock, int rfc_num, std::string &my_host, int my_port,
 
 void list_rfcs_remote(ClientSocket &sock, std::string &host, int upload_port) {
 
-    P2SMessage p2s_message = P2SMessage::LIST;
-    sock.send(&p2s_message, sizeof(P2SMessage));
+    int tmp = htonl(static_cast<int>(P2SMessage::LIST));
+    sock.send(&tmp, sizeof(P2SMessage));
 
     // get response
-    int tmp;
     sock.recv(&tmp, sizeof(int));
+    tmp = ntohl(tmp);
     std::byte *buf = new std::byte[tmp];
     sock.recv(buf, tmp);
     ListRFCResponse res;
@@ -231,8 +235,8 @@ void list_rfcs_local(RFCManager &rfc_manager) {
 
 
 void disconnect(ClientSocket& sock) {
-    P2SMessage msg = P2SMessage::DISCONNECT;
-    sock.send(&msg, sizeof(P2SMessage));
+    int tmp = htonl(static_cast<int>(P2SMessage::DISCONNECT));
+    sock.send(&tmp, sizeof(P2SMessage));
     sock.disconnect();
 }
 
@@ -260,6 +264,7 @@ int main(int argc, char *argv[]) {
         // get hostname
         int host_len;
         sock->recv(&host_len, sizeof(int));
+        host_len = ntohl(host_len);
         char host_c[host_len + 1];
         sock->recv(host_c, host_len);
         host_c[host_len] = '\0';
@@ -267,12 +272,14 @@ int main(int argc, char *argv[]) {
         // get upload port
         int upload_port;
         sock->recv(&upload_port, sizeof(int));
+        upload_port = ntohl(upload_port);
         std::cout << "Connection from " << host << " (" << upload_port << ")" << std::endl;
         
         // get message
         P2PMessage message;
         do {
             sock->recv(&message, sizeof(P2PMessage));
+            message = static_cast<P2PMessage>(ntohl(static_cast<int>(message)));
 
             switch (message) {
                 case P2PMessage::GET: {
@@ -298,8 +305,9 @@ int main(int argc, char *argv[]) {
                     
                     GetRFCResponse res(code, content);
                     buf = res.to_bytes();
-                    int tmp = res.message_size();
+                    int tmp = htonl(res.message_size());
                     sock->send(&tmp, sizeof(int));
+                    tmp = ntohl(tmp);
                     sock->send(buf, tmp);
                     delete[] buf;
 
@@ -326,10 +334,12 @@ int main(int argc, char *argv[]) {
     std::cout << "Connected to index" << std::endl;
 
     // get and send protocol version
-    int client_version = PROTOCOL_VERSION;
+    int client_version = htonl(PROTOCOL_VERSION);
     sock.send(&client_version, sizeof(int));
+    client_version = ntohl(client_version);
     int server_version;
     sock.recv(&server_version, sizeof(int));
+    server_version = ntohl(server_version);
     if (server_version != client_version) {
         std::cout << "Tried connecting, but server uses unsupported protocol version"
             << std::endl;
@@ -338,10 +348,13 @@ int main(int argc, char *argv[]) {
 
     // send hostname
     int host_len = address.length();
+    host_len = htonl(host_len);
     sock.send(&host_len, sizeof(int));
+    host_len = ntohl(host_len);
     sock.send(const_cast<char*>(address.c_str()), host_len);
     // send upload port
-    sock.send(&port, sizeof(int));
+    int tmp = htonl(port);
+    sock.send(&tmp, sizeof(int));
 
     // add available RFCs
     add_available_rfcs(sock, rfc_manager);

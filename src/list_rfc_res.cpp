@@ -3,6 +3,7 @@
 #include <cstddef>
 using std::byte;
 #include <cstring>
+#include <arpa/inet.h>
 
 
 ListRFCResponse::ListRFCResponse(void) : code(0) {}
@@ -71,19 +72,23 @@ void ListRFCResponse::from_bytes(std::byte *bytes) {
     int rfc_num;
     // copy int bytes from byte sequence to length to find code
     std::memcpy(&code, bytes + pos, sizeof(int));
+    code = ntohl(code);
     if ( code == 200 ) {
         // move pos forward int bytes, the amount we just copied
         pos += sizeof(int);
         // copy int bytes from byte sequence to length
         std::memcpy(&len_list, bytes + pos, sizeof(int));
+        len_list = ntohl(len_list);
         // move pos forward int bytes, the amount we just copied
         pos += sizeof(int);
         for ( int i = 0; i < len_list; i++ ) {
             // copy rfc num
             std::memcpy(&rfc_num, bytes + pos, sizeof(int));
+            rfc_num = ntohl(rfc_num);
             pos += sizeof(int);
             // copy int bytes from byte sequence to length to find length of host
             std::memcpy(&len_host, bytes + pos, sizeof(int));
+            len_host = ntohl(len_host);
             // move pos forward int bytes, the amount we just copied
             pos += sizeof(int);
             // copy enough bytes from byte sequence to host to find host string
@@ -93,6 +98,7 @@ void ListRFCResponse::from_bytes(std::byte *bytes) {
             pos += len_host;
             // copy port
             std::memcpy(&var_port, bytes + pos, sizeof(int));
+            var_port = ntohl(var_port);
             pos += sizeof(int);
             // add to list
             RFCHolder h { rfc_num, Client { std::string(host), var_port }};
@@ -111,22 +117,26 @@ std::byte* ListRFCResponse::to_bytes() {
     // use pos to keep track of where we need to write next in the buffer
     unsigned int pos = 0;
     // copy int bytes to buffer
-    std::memcpy(buf + pos, &code, sizeof(int));
+    int tmp = htonl(code);
+    std::memcpy(buf + pos, &tmp, sizeof(int));
     if ( code == 200 ) {
         // move pos forward int bytes, the amount we just copied
         pos += sizeof(int);
         // copy int bytes to buffer
-        int tmp = holders.size();
+        tmp = holders.size();
+        tmp = htonl(tmp);
         std::memcpy(buf + pos, &tmp, sizeof(int));
         // move pos forward int bytes, the amount we just copied
         pos += sizeof(int);
         for (auto it : holders) {
             // copy rfc num to buffer
             tmp = it.rfc;
+            tmp = htonl(tmp);
             std::memcpy(buf + pos, &tmp, sizeof(int));
             pos += sizeof(int);
             // copy int bytes to buffer
             tmp = it.peer.host.length();
+            tmp = htonl(tmp);
             std::memcpy(buf + pos, &tmp, sizeof(int));
             // move pos forward int bytes, the amount we just copied
             pos += sizeof(int);
@@ -135,7 +145,9 @@ std::byte* ListRFCResponse::to_bytes() {
             // move pos forward length bytes, the amount we just copied
             pos += it.peer.host.length();
             // copy int bytes to buffer
-            std::memcpy(buf + pos, &(it.peer.port), sizeof(int));
+            tmp = it.peer.port;
+            tmp = htonl(it.peer.port);
+            std::memcpy(buf + pos, &tmp, sizeof(int));
             pos += sizeof(int);
         }
     }

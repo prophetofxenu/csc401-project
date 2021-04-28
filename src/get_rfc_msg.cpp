@@ -3,6 +3,7 @@
 #include <cstddef>
 using std::byte;
 #include <cstring>
+#include <arpa/inet.h>
 
 
 GetRFCMessage::GetRFCMessage(void) : number(0) {}
@@ -34,6 +35,7 @@ unsigned int GetRFCMessage::message_size() {
 void GetRFCMessage::from_bytes(std::byte *bytes) {
     // copy 2 bytes (size of short) from byte sequence to number
     std::memcpy(&number, bytes, sizeof(short));
+    number = ntohs(number);
 }
 
 
@@ -43,7 +45,8 @@ std::byte* GetRFCMessage::to_bytes() {
     // allocate a new buffer to store the message in
     std::byte *buf = new std::byte[message_size()];
     // copy 2 bytes (size of short) from number to buffer
-    std::memcpy(buf, &number, sizeof(short));
+    short tmp = htons(number);
+    std::memcpy(buf, &tmp, sizeof(short));
     return buf;
 }
 

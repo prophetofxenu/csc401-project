@@ -3,6 +3,7 @@
 #include <cstddef>
 using std::byte;
 #include <cstring>
+#include <arpa/inet.h>
 
 
 AddRFCResponse::AddRFCResponse(void) : code(0) {}
@@ -38,6 +39,7 @@ unsigned int AddRFCResponse::message_size() {
 void AddRFCResponse::from_bytes(std::byte *bytes) {
     // copy int bytes from byte sequence to length to find code
     std::memcpy(&code, bytes, sizeof(int));
+    code = ntohl(code);
 }
 
 
@@ -47,7 +49,8 @@ std::byte* AddRFCResponse::to_bytes() {
     // allocate a new buffer to store the message in
     std::byte *buf = new std::byte[message_size()];
     // copy int bytes to buffer
-    std::memcpy(buf, &code, sizeof(int));
+    int tmp = htonl(code);
+    std::memcpy(buf, &tmp, sizeof(int));
     return buf;
 }
 

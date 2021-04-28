@@ -3,6 +3,7 @@
 #include <cstddef>
 using std::byte;
 #include <cstring>
+#include <arpa/inet.h>
 
 
 GetRFCResponse::GetRFCResponse(void) : code(0), content("") {}
@@ -57,12 +58,14 @@ void GetRFCResponse::from_bytes(std::byte *bytes) {
     unsigned int pos = 0;
     // copy int bytes from byte sequence to length to find code
     std::memcpy(&code, bytes + pos, sizeof(int));
+    code = ntohl(code);
     if ( code == 200 ) {
         // move pos forward int bytes, the amount we just copied
         pos += sizeof(int);
         // copy int bytes from byte sequence to length to find length
         int length;
         std::memcpy(&length, bytes + pos, sizeof(int));
+        length = ntohl(length);
         // move pos forward int bytes, the amount we just copied
         pos += sizeof(int);
         // copy enough bytes from byte sequence to find string
@@ -71,8 +74,6 @@ void GetRFCResponse::from_bytes(std::byte *bytes) {
         content[length] = '\0';
         this->content = std::string(content);
         delete[] content;
-        // move pos forward length bytes, the amount we just copied
-        pos += length;
     }
 }
 
@@ -85,12 +86,14 @@ std::byte* GetRFCResponse::to_bytes() {
     // use pos to keep track of where we need to write next in the buffer
     unsigned int pos = 0;
     // copy int bytes to buffer
-    std::memcpy(buf + pos, &code, sizeof(int));
+    int tmp = htonl(code);
+    std::memcpy(buf + pos, &tmp, sizeof(int));
     if ( code == 200 ) {
         // move pos forward int bytes, the amount we just copied
         pos += sizeof(int);
         // copy int bytes to buffer
-        int tmp = content.length();
+        tmp = content.length();
+        tmp = htonl(tmp);
         std::memcpy(buf + pos, &tmp, sizeof(int));
         // move pos forward int bytes, the amount we just copied
         pos += sizeof(int);

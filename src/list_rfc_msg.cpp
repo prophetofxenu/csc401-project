@@ -3,6 +3,7 @@
 #include <cstddef>
 using std::byte;
 #include <cstring>
+#include <arpa/inet.h>
 
 
 ListRFCMessage::ListRFCMessage(void) : host(""), port(0) {}
@@ -52,6 +53,7 @@ void ListRFCMessage::from_bytes(std::byte *bytes) {
     unsigned int len_host = 0;
     // copy int bytes from byte sequence to length to find length of host
     std::memcpy(&len_host, bytes + pos, sizeof(int));
+    len_host = ntohl(len_host);
     // move pos forward int bytes, the amount we just copied
     pos += sizeof(int);
     // copy enough bytes from byte sequence to host to find host string
@@ -63,6 +65,7 @@ void ListRFCMessage::from_bytes(std::byte *bytes) {
     pos += len_host;
     // copy 2 bytes (size of short) from byte sequence to port
     std::memcpy(&port, bytes + pos, sizeof(int));
+    port = ntohl(port);
     // move pos forward 2 bytes, the amount we just copied
     pos += sizeof(int);
 }
@@ -77,6 +80,7 @@ std::byte* ListRFCMessage::to_bytes() {
     unsigned int pos = 0;
     // copy int bytes from length to buffer
     int tmp = host.length();
+    tmp = htonl(tmp);
     std::memcpy(buf + pos, &tmp, sizeof(int));
     // move pos forward int bytes, the amount we just copied
     pos += sizeof(int);
@@ -85,7 +89,8 @@ std::byte* ListRFCMessage::to_bytes() {
     // move pos forward length bytes, the amount we just copied
     pos += host.length();
     // copy 2 bytes (size of int) from port to buffer
-    std::memcpy(buf + pos, &port, sizeof(int));
+    tmp = htonl(port);
+    std::memcpy(buf + pos, &tmp, sizeof(int));
     return buf;
 }
 

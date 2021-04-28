@@ -5,6 +5,7 @@
 #include <cstddef>
 using std::byte;
 #include <cstring>
+#include <arpa/inet.h>
 
 
 LookupRFCResponse::LookupRFCResponse(void) : code(0) {}
@@ -73,16 +74,19 @@ void LookupRFCResponse::from_bytes(std::byte *bytes) {
     int var_port = 0;
     // copy int bytes from byte sequence to length to find code
     std::memcpy(&code, bytes + pos, sizeof(int));
+    code = ntohl(code);
     if ( code == 200 ) {
         // move pos forward int bytes, the amount we just copied
         pos += sizeof(int);
         // copy int bytes from byte sequence to length
         std::memcpy(&len_list, bytes + pos, sizeof(int));
+        len_list = ntohl(len_list);
         // move pos forward int bytes, the amount we just copied
         pos += sizeof(int);
         for ( int i = 0; i < len_list; i++ ) {
             // copy int bytes from byte sequence to length to find length of host
             std::memcpy(&len_host, bytes + pos, sizeof(int));
+            len_host = ntohl(len_host);
             // move pos forward int bytes, the amount we just copied
             pos += sizeof(int);
             // copy host
@@ -92,6 +96,7 @@ void LookupRFCResponse::from_bytes(std::byte *bytes) {
             pos += len_host;
             // copy port
             std::memcpy(&var_port, bytes + pos, sizeof(int));
+            var_port = ntohl(var_port);
             pos += sizeof(int);
             // add to list
             Client c { std::string(host), var_port };
@@ -109,18 +114,21 @@ std::byte* LookupRFCResponse::to_bytes() {
     // use pos to keep track of where we need to write next in the buffer
     unsigned int pos = 0;
     // copy int bytes to buffer
-    std::memcpy(buf + pos, &code, sizeof(int));
+    int tmp = htonl(code);
+    std::memcpy(buf + pos, &tmp, sizeof(int));
     if ( code == 200 ) {
         // move pos forward int bytes, the amount we just copied
         pos += sizeof(int);
         // copy int bytes to buffer
-        int tmp = hosts.size();
+        tmp = hosts.size();
+        tmp = htonl(tmp);
         std::memcpy(buf + pos, &tmp, sizeof(int));
         // move pos forward int bytes, the amount we just copied
         pos += sizeof(int);
         for (auto it : hosts) {
             // copy host length
             tmp = it.host.length();
+            tmp = htonl(tmp);
             std::memcpy(buf + pos, &tmp, sizeof(int));
             pos += sizeof(int);
             // copy host bytes to buffer
@@ -128,7 +136,9 @@ std::byte* LookupRFCResponse::to_bytes() {
             // move pos forward length bytes, the amount we just copied
             pos += it.host.length();
             // copy int bytes to buffer
-            std::memcpy(buf + pos, &(it.port), sizeof(int));
+            tmp = it.port;
+            tmp = htonl(tmp);
+            std::memcpy(buf + pos, &tmp, sizeof(int));
             // move pos forward int bytes, the amount we just copied
             pos += sizeof(int);
         }
