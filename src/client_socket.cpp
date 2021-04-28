@@ -20,7 +20,7 @@ ClientSocket::ClientSocket(string addr, uint16_t port) {
 
 void ClientSocket::connect() {
     if (connected)
-        return; // TODO: throw a custom exception here 
+        return;
 
     struct sockaddr_in serv_addr;
     if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -58,20 +58,38 @@ bool ClientSocket::is_connected() {
 }
 
 
-void ClientSocket::send(void *data, size_t len) {
-    // TODO make this more reliable
-    if (::send(sock_fd, data, len, 0) != len) {
-        std::cerr << "Error sending bytes to server" << std::endl;
+bool ClientSocket::send(void *data, size_t len) {
+    char *d = reinterpret_cast<char*>(data);
+    int retries = 0;
+    size_t sent = 0;
+    while (retries < 10 && sent < len) {
+        int s = ::send(sock_fd, d + sent, len - sent, 0);
+        sent += s;
+        if (s < 1)
+            retries++;
     }
+    if (retries == 10) {
+        std::cerr << "Too many retries while sending bytes" << std::endl;
+        return false;
+    }
+    return true;
 }
 
 
-void ClientSocket::recv(void *buf, size_t len) {
-    // TODO change buf to std::byte *
+bool ClientSocket::recv(void *buf, size_t len) {
     char *b = reinterpret_cast<char*>(buf);
+    int retries = 0;
     size_t received = 0;
     while (received < len) {
-        received += ::recv(sock_fd, b + received, len - received, 0);
+        int r = ::recv(sock_fd, b + received, len - received, 0);
+        received += r;
+        if (r < 1)
+            retries++;
     }
+    if (retries == 10) {
+        std::cerr << "Too many retries while receiving bytes" << std::endl;
+        return false;
+    }
+    return true;
 }
 

@@ -21,8 +21,8 @@ public:
     virtual void connect();
     virtual void disconnect();
     virtual bool is_connected();
-    virtual void send(void *data, size_t len);
-    virtual void recv(void *buf, size_t len);
+    virtual bool send(void *data, size_t len);
+    virtual bool recv(void *buf, size_t len);
 
 };
 

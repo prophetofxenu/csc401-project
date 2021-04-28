@@ -13,32 +13,45 @@ ServerSocket::ServerSocket(int sock_fd) {
 }
 
 
-/*
-ServerSocket::~ServerSocket() {
-    if (!connected)
-        return;
-    ::close(sock_fd);
-}
-*/
-
-
-void ServerSocket::send(void *data, size_t len) {
+bool ServerSocket::send(void *data, size_t len) {
+    char *d = reinterpret_cast<char*>(data);
     if (!connected) {
         std::cerr << "Cannot send to disconnected socket" << std::endl;
     }
-    if (::send(sock_fd, data, len, 0) != len) {
-        std::cerr << "Error sending bytes to client" << std::endl;
+    int retries = 0;
+    size_t sent = 0;
+    while (retries < 10 && sent < len) {
+        int s = ::send(sock_fd, d + sent, len - sent, 0);
+        sent += s;
+        if (s < 1)
+            retries++;
     }
+    if (retries == 10) {
+        std::cerr << "Too many retries while sending bytes" << std::endl;
+        return false;
+    }
+    return true;
 }
 
 
-void ServerSocket::recv(void *buf, size_t len) {
+bool ServerSocket::recv(void *buf, size_t len) {
+    char *b = reinterpret_cast<char*>(buf);
     if (!connected) {
         std::cerr << "Cannot receive from disconnected socket" << std::endl;
     }
-    if (::recv(sock_fd, buf, len, 0) != len) {
-        std::cerr << "Error receiving bytes from client" << std::endl;
+    int retries = 0;
+    size_t received = 0;
+    while (retries < 10 && received < len) {
+        int r = ::recv(sock_fd, b + received, len - received, 0);
+        received += r;
+        if (r < 1)
+            retries ++;
     }
+    if (retries == 10) {
+        std::cerr << "Too many retries while receiving bytes" << std::endl;
+        return false;
+    }
+    return true;
 }
 
 
