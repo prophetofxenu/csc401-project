@@ -69,6 +69,8 @@ void ListRFCMessage::from_bytes(std::byte *bytes) {
 
 
 std::byte* ListRFCMessage::to_bytes() {
+    if (!is_valid())
+        return nullptr;
     // allocate a new buffer to store the message in
     std::byte *buf = new std::byte[message_size()];
     // use pos to keep track of where we need to write next in the buffer

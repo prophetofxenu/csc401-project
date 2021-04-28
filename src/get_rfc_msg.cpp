@@ -38,6 +38,8 @@ void GetRFCMessage::from_bytes(std::byte *bytes) {
 
 
 std::byte* GetRFCMessage::to_bytes() {
+    if (!is_valid())
+        return nullptr;
     // allocate a new buffer to store the message in
     std::byte *buf = new std::byte[message_size()];
     // copy 2 bytes (size of short) from number to buffer

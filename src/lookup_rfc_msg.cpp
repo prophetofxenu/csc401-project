@@ -39,6 +39,8 @@ void LookupRFCMessage::from_bytes(std::byte *bytes) {
 
 
 std::byte* LookupRFCMessage::to_bytes() {
+    if (!is_valid())
+        return nullptr;
     // allocate a new buffer to store the message in
     std::byte *buf = new std::byte[message_size()];
     // copy number
