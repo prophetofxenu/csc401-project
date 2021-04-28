@@ -17,6 +17,19 @@ using std::list;
 int main(void) {
 
     auto handler = [](ServerSocket *sock, bool *is_finished) {
+
+        // get and send protocol version
+        int server_version = PROTOCOL_VERSION;
+        sock->send(&server_version, sizeof(int));
+        int client_version;
+        sock->recv(&client_version, sizeof(int));
+        if (server_version != client_version) {
+            std::cout << "Client tried connecting, but uses unsupported protocol version"
+                << std::endl;
+            *is_finished = false;
+            return;
+        }
+
         // get hostname
         int host_len;
         sock->recv(&host_len, sizeof(int));
@@ -27,7 +40,7 @@ int main(void) {
         // get upload port
         int upload_port;
         sock->recv(&upload_port, sizeof(int));
-        std::cout << "  CONNECT - " << host << " (" << upload_port << ")" << std::endl;
+        std::cout << "   CONNECT - " << host << " (" << upload_port << ")" << std::endl;
         
         // add to CI
         CentralIndex::add_client(host, upload_port);
@@ -55,7 +68,7 @@ int main(void) {
                     buf = res.to_bytes();
                     sock->send(buf, res.message_size());
                     delete[] buf;
-                    std::cout << "      ADD - " << host << " (" << upload_port << ")"
+                    std::cout << "       ADD - " << host << " (" << upload_port << ")"
                         << " RFC" << rfc_num << std::endl;
                     break;
 
@@ -71,7 +84,7 @@ int main(void) {
                     sock->send(&tmp, sizeof(int));
                     sock->send(buf, tmp);
                     delete[] buf;
-                    std::cout << "     LIST - " << host << " (" << upload_port << ")" << std::endl;
+                    std::cout << "      LIST - " << host << " (" << upload_port << ")" << std::endl;
                     break;
 
                 }
@@ -95,7 +108,7 @@ int main(void) {
                     sock->send(&tmp, sizeof(int));
                     sock->send(buf, tmp);
                     delete[] buf;
-                    std::cout << "   LOOKUP - " << host << " (" << upload_port << ") RFC"
+                    std::cout << "    LOOKUP - " << host << " (" << upload_port << ") RFC"
                         << rfc_num <<std::endl;
                     break;
                 }

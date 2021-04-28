@@ -202,6 +202,17 @@ int main(int argc, char *argv[]) {
     sock.connect();
     std::cout << "Connected to index" << std::endl;
 
+    // get and send protocol version
+    int client_version = PROTOCOL_VERSION;
+    sock.send(&client_version, sizeof(int));
+    int server_version;
+    sock.recv(&server_version, sizeof(int));
+    if (server_version != client_version) {
+        std::cout << "Tried connecting, but server uses unsupported protocol version"
+            << std::endl;
+        return 1;
+    }
+
     // send hostname
     int host_len = address.length();
     sock.send(&host_len, sizeof(int));

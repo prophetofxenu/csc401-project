@@ -1,6 +1,8 @@
 #ifndef RFC_COMMON_H
 #define RFC_COMMON_H
 
+#define PROTOCOL_VERSION 1
+
 #include <string>
 
 
@@ -19,6 +21,7 @@ struct RFCHolder {
 
 
 enum class P2SMessage {
+    HELLO,
     ADD,
     LIST,
     LOOKUP,
@@ -27,6 +30,7 @@ enum class P2SMessage {
 
 
 enum class P2PMessage {
+    HELLO,
     GET,
     DISCONNECT
 };
