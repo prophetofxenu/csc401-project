@@ -15,8 +15,6 @@ class EncryptedClientSocket : public ClientSocket {
 
 private:
 
-    bool crypto_init_in_progress;
-
     CryptoPP::SecByteBlock iv;
     CryptoPP::ChaCha20Poly1305::Encryption enc;
     CryptoPP::ChaCha20Poly1305::Decryption dec;

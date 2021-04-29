@@ -11,12 +11,11 @@ void EncryptedClientSocket::crypto_handshake() {
         return this->ClientSocket::recv(buf, len);
     };
     Crypto::handshake(send, recv, iv, false, enc, dec);
-    crypto_init_in_progress = false;
 }
 
 
 EncryptedClientSocket::EncryptedClientSocket(std::string addr, uint16_t port) :
-    ClientSocket(addr, port), crypto_init_in_progress(true), iv(Crypto::IV_LEN) {}
+    ClientSocket(addr, port), iv(Crypto::IV_LEN) {}
 
 
 void EncryptedClientSocket::connect() {
@@ -29,17 +28,28 @@ void EncryptedClientSocket::connect() {
 
 
 bool EncryptedClientSocket::send(void *data, size_t len) {
-    if (crypto_init_in_progress)
-        return ClientSocket::send(data, len);
-    // TODO
-    return false;
+
+    CryptoPP::SecByteBlock ct(len);
+    CryptoPP::SecByteBlock mac(Crypto::MAC_LEN);
+    enc.EncryptAndAuthenticate(ct, mac, Crypto::MAC_LEN,
+                iv, Crypto::IV_LEN, Crypto::CIP_HEADER, Crypto::CIP_HEADER_LEN,
+                reinterpret_cast<CryptoPP::byte*>(data), len);
+    ClientSocket::send(ct, len);
+    return ClientSocket::send(mac, Crypto::MAC_LEN);
+
 }
 
 
 bool EncryptedClientSocket::recv(void *data, size_t len) {
-    if (crypto_init_in_progress)
-        return ClientSocket::recv(data, len);
-    // TODO
-    return false;
+
+    CryptoPP::SecByteBlock ct(len);
+    CryptoPP::SecByteBlock mac(len);
+    if (!ClientSocket::recv(ct, len))
+        return false;
+    if (!ClientSocket::recv(mac, Crypto::MAC_LEN))
+        return false;
+    return dec.DecryptAndVerify(reinterpret_cast<CryptoPP::byte*>(data), mac, Crypto::MAC_LEN,
+            iv, Crypto::IV_LEN, Crypto::CIP_HEADER, Crypto::CIP_HEADER_LEN, ct, len);
+
 }
 

@@ -21,6 +21,8 @@
 #include <cryptopp/sha.h>
 #include <cryptopp/chachapoly.h>
 
+#include <iostream>
+
 
 void EncryptedServerSocket::crypto_handshake() {
     auto send = [=](void *data, size_t len) {
@@ -30,27 +32,39 @@ void EncryptedServerSocket::crypto_handshake() {
         return this->ServerSocket::recv(buf, len);
     };
     Crypto::handshake(send, recv, iv, true, enc, dec);
-    crypto_init_in_progress = false;
 }
 
 
 EncryptedServerSocket::EncryptedServerSocket(int sock_fd) : ServerSocket(sock_fd), 
     iv(Crypto::IV_LEN) {
 
-    crypto_init_in_progress = true;
     crypto_handshake();
-
 }
 
 
 bool EncryptedServerSocket::send(void *data, size_t len) {
-    // TODO
-    return false;
+
+    CryptoPP::SecByteBlock ct(len);
+    CryptoPP::SecByteBlock mac(Crypto::MAC_LEN);
+    enc.EncryptAndAuthenticate(ct, mac, Crypto::MAC_LEN,
+                iv, Crypto::IV_LEN, Crypto::CIP_HEADER, Crypto::CIP_HEADER_LEN,
+                reinterpret_cast<CryptoPP::byte*>(data), len);
+    ServerSocket::send(ct, len);
+    return ServerSocket::send(mac, Crypto::MAC_LEN);
+
 }
 
 
 bool EncryptedServerSocket::recv(void *data, size_t len) {
-    // TODO
-    return false;
+
+    CryptoPP::SecByteBlock ct(len);
+    CryptoPP::SecByteBlock mac(len);
+    if (!ServerSocket::recv(ct, len))
+        return false;
+    if (!ServerSocket::recv(mac, Crypto::MAC_LEN))
+        return false;
+    return dec.DecryptAndVerify(reinterpret_cast<CryptoPP::byte*>(data), mac, Crypto::MAC_LEN,
+            iv, Crypto::IV_LEN, Crypto::CIP_HEADER, Crypto::CIP_HEADER_LEN, ct, len);
+
 }
 

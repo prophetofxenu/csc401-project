@@ -17,7 +17,7 @@
 
 bool Crypto::handshake(std::function<bool(void* data, size_t len)> send,
         std::function<bool(void* buf, size_t len)> recv,
-        CryptoPP::SecByteBlock iv, bool gen_iv,
+        CryptoPP::SecByteBlock &iv, bool gen_iv,
         CryptoPP::ChaCha20Poly1305::Encryption &enc,
         CryptoPP::ChaCha20Poly1305::Decryption &dec) {
 
@@ -93,8 +93,6 @@ bool Crypto::handshake(std::function<bool(void* data, size_t len)> send,
         std::cerr << "Incorrect confirmation message" << std::endl;
         return false;
     }
-
-    std::cout << ":)" << std::endl;
 
     return true;
 

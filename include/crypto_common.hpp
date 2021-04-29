@@ -25,7 +25,7 @@ namespace Crypto {
 
     bool handshake(std::function<bool(void*,size_t)> send,
             std::function<bool(void*,size_t)> recv,
-            CryptoPP::SecByteBlock iv, bool gen_iv,
+            CryptoPP::SecByteBlock &iv, bool gen_iv,
             CryptoPP::ChaCha20Poly1305::Encryption &enc,
             CryptoPP::ChaCha20Poly1305::Decryption &dec);
 
