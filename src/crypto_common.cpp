@@ -43,9 +43,7 @@ bool Crypto::handshake(std::function<bool(void* data, size_t len)> send,
     // perform agreement
     CryptoPP::SecByteBlock shared_ecdh(dh.AgreedValueLength());
     if (!dh.Agree(shared_ecdh, serv_priv_ecdh, client_pub_ecdh)) {
-        // TODO runtime exception
-        std::cerr << "Unable to perform ECDH agreement" << std::endl;
-        return false;
+        throw Crypto::HandshakeException();
     }
 
     // derive stream key
@@ -85,16 +83,19 @@ bool Crypto::handshake(std::function<bool(void* data, size_t len)> send,
             iv, Crypto::IV_LEN,
             Crypto::CIP_HEADER, Crypto::CIP_HEADER_LEN, 
             confirm_recv_ct, Crypto::CONFIRM_PHRASE_LEN)) {
-        std::cerr << "Unable to confirm cipher" << std::endl;
-        return false;
+        throw Crypto::HandshakeException();
     }
     confirm_recv_pt[Crypto::CONFIRM_PHRASE_LEN] = '\0';
     if (std::string(reinterpret_cast<char*>(confirm_recv_pt)) != Crypto::CONFIRM_PHRASE) {
-        std::cerr << "Incorrect confirmation message" << std::endl;
-        return false;
+        throw Crypto::HandshakeException();
     }
 
     return true;
 
+}
+
+
+const char* Crypto::HandshakeException::what() const noexcept {
+    return "Error during cryptographic handshake";
 }
 

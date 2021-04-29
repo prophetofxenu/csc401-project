@@ -11,6 +11,7 @@
 
 namespace Crypto {
 
+
     static constexpr CryptoPP::byte HKDF_SALT[] = "HKDFSALT";
     static constexpr int HKDF_SALT_LEN = sizeof(HKDF_SALT) - 1;
     static constexpr CryptoPP::byte HKDF_INFO[] = "HKDFINFO";
@@ -23,11 +24,18 @@ namespace Crypto {
     static constexpr char CONFIRM_PHRASE[] = "CONFIRM";
     static constexpr int CONFIRM_PHRASE_LEN = sizeof(CONFIRM_PHRASE) - 1;
 
+
     bool handshake(std::function<bool(void*,size_t)> send,
             std::function<bool(void*,size_t)> recv,
             CryptoPP::SecByteBlock &iv, bool gen_iv,
             CryptoPP::ChaCha20Poly1305::Encryption &enc,
             CryptoPP::ChaCha20Poly1305::Decryption &dec);
+
+    
+    class HandshakeException : public std::exception {
+        virtual const char* what() const noexcept;
+    };
+
 
 }
 
