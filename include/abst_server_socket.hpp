@@ -1,10 +1,12 @@
 #ifndef ABST_SERVER_SOCK_H
 #define ABST_SERVER_SOCK_H
 
+#include "abst_socket.hpp"
+
 #include <cstddef>
 
 
-class AbstServerSocket {
+class AbstServerSocket : public AbstSocket {
 
 public:
 
