@@ -13,6 +13,7 @@
 #include <cryptopp/chachapoly.h>
 
 #include <iostream>
+#include <arpa/inet.h>
 
 
 bool Crypto::handshake(std::function<bool(void* data, size_t len)> send,
@@ -30,13 +31,15 @@ bool Crypto::handshake(std::function<bool(void* data, size_t len)> send,
         serv_pub_ecdh(dh.PublicKeyLength());
     dh.GenerateKeyPair(rng, serv_priv_ecdh, serv_pub_ecdh);
     // send public piece to client
-    int serv_pub_ecdh_size = serv_pub_ecdh.size();
+    int serv_pub_ecdh_size = htonl(serv_pub_ecdh.size());
     send(&serv_pub_ecdh_size, sizeof(int));
+    serv_pub_ecdh_size = ntohl(serv_pub_ecdh_size);
     send(serv_pub_ecdh.data(), serv_pub_ecdh_size);
 
     // get client public piece
     int client_pub_ecdh_size;
     recv(&client_pub_ecdh_size, sizeof(int));
+    client_pub_ecdh_size = ntohl(client_pub_ecdh_size);
     CryptoPP::SecByteBlock client_pub_ecdh(client_pub_ecdh_size);
     recv(client_pub_ecdh.data(), client_pub_ecdh_size);
 
