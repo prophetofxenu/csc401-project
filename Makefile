@@ -2,7 +2,7 @@ CC = g++
 CFLAGS = -Wall -Wextra -g
 CXXFLAGS = $(CFLAGS) -std=c++17
 INCLUDES = -I include/
-LIBS = -lpthread
+LIBS = -lpthread -l:libcryptopp.so
 
 INCLUDE = include
 SRC = src
@@ -12,6 +12,10 @@ OBJECTS =  $(BUILD)/add_rfc_msg.o
 OBJECTS += $(BUILD)/add_rfc_res.o
 OBJECTS += $(BUILD)/central_index.o
 OBJECTS += $(BUILD)/client_socket.o
+OBJECTS += $(BUILD)/crypto_common.o
+OBJECTS += $(BUILD)/encrypted_client_socket.o
+OBJECTS += $(BUILD)/encrypted_server_socket.o
+OBJECTS += $(BUILD)/encrypted_server_socket_listener.o
 OBJECTS += $(BUILD)/get_rfc_msg.o
 OBJECTS += $(BUILD)/get_rfc_res.o
 OBJECTS += $(BUILD)/list_rfc_msg.o

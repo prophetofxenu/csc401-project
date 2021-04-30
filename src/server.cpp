@@ -1,5 +1,5 @@
-#include "server_socket.hpp"
-#include "server_socket_listener.hpp"
+#include "encrypted_server_socket.hpp"
+#include "encrypted_server_socket_listener.hpp"
 #include "central_index.hpp"
 #include "common.hpp"
 #include "add_rfc_msg.hpp"
@@ -165,7 +165,7 @@ void client_handler(ServerSocket *sock, bool *is_finished) {
 
 int main(void) {
 
-    ServerSocketListener listener(8080, client_handler);
+    EncryptedServerSocketListener listener(8080, client_handler);
     std::cout << "Server started\n" << std::endl;
     auto thread = listener.listen();
     thread->join();

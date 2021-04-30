@@ -1,6 +1,6 @@
-#include "client_socket.hpp"
-#include "server_socket.hpp"
-#include "server_socket_listener.hpp"
+#include "encrypted_client_socket.hpp"
+#include "encrypted_server_socket.hpp"
+#include "encrypted_server_socket_listener.hpp"
 #include "common.hpp"
 #include "add_rfc_msg.hpp"
 #include "add_rfc_res.hpp"
@@ -59,7 +59,7 @@ bool get_from_peer(std::string &my_host, int my_port, RFCManager &rfc_manager,
         int rfc_num, Client &client) {
 
     // connect to peer
-    ClientSocket sock(client.host, client.port);
+    EncryptedClientSocket sock(client.host, client.port);
     sock.connect();
     std::cout << "Connected to peer " << client.host << " (" << client.port
         << ")" << std::endl;
@@ -325,11 +325,11 @@ int main(int argc, char *argv[]) {
     };
 
     // start listener
-    ServerSocketListener listener(port, handler);
+    EncryptedServerSocketListener listener(port, handler);
     listener.listen();
     std::cout << "Server started" << std::endl;
 
-    ClientSocket sock("127.0.0.1", 8080); 
+    EncryptedClientSocket sock("127.0.0.1", 8080); 
     sock.connect();
     std::cout << "Connected to index" << std::endl;
 
