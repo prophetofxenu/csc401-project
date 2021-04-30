@@ -9,17 +9,7 @@
 
 #include "crypto_common.hpp"
 
-#include <cryptopp/osrng.h>
-#include <cryptopp/aes.h>
-#include <cryptopp/eccrypto.h>
-#include <cryptopp/secblock.h>
-#include <cryptopp/oids.h>
-#include <cryptopp/asn.h>
-#include <cryptopp/integer.h>
-#include <cryptopp/hex.h>
-#include <cryptopp/hkdf.h>
-#include <cryptopp/sha.h>
-#include <cryptopp/chachapoly.h>
+#include <crypto++/secblock.h>
 
 #include <iostream>
 

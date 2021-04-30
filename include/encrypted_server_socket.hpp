@@ -4,8 +4,8 @@
 #include "server_socket.hpp"
 #include "crypto_common.hpp"
 
-#include <cryptopp/secblock.h>
-#include <cryptopp/chachapoly.h>
+#include <crypto++/secblock.h>
+#include <crypto++/chachapoly.h>
 
 
 class EncryptedServerSocket : public ServerSocket {

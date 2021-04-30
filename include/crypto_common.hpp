@@ -3,9 +3,9 @@
 
 #include "abst_socket.hpp"
 
-#include <cryptopp/secblock.h>
-#include <cryptopp/oids.h>
-#include <cryptopp/chachapoly.h>
+#include <crypto++/secblock.h>
+#include <crypto++/oids.h>
+#include <crypto++/chachapoly.h>
 #include <functional>
 
 
