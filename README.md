@@ -5,12 +5,20 @@ P2P system with central index for distributing RFCs, written in C++
 ## Build
 
 Requirements
-* g++
+* g++ (needs C++17 support)
 * make
-* Crypto++ library
+* Crypto++ library (8.1+)
 
-1. Clone repository
-2. Clients will attempt to connect to the CI at 127.0.0.1:8080. If you want to change this,
+If you want to build on WSL, you will need the Kali version from the Microsoft Store. It is the only
+WSL image that has up to date Crypto++ libraries, Ubuntu is still on version 6. You may be able to use
+the Alpine WSL image, but this is untested.
+
+On Kali, the command `sudo apt install g++ make git libcrypto++8 libcrypto++-dev` will install all needed
+software.
+
+1. Clone repository. cd in. If using Kali WSL, checkout the main-wsl branch which uses the Debian names for the
+Crypto++ headers.
+3. Clients will attempt to connect to the CI at 127.0.0.1:8080. If you want to change this,
 change line 168 of src/server.cpp and line 332 of src/client.cpp
 3. Run make
 4. Run server
